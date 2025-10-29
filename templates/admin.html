@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Braintree Food Pantry — Admin</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Favicon -->
+  <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}">
+
+  <style>
+    :root {
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --accent: #22d3ee;
+    }
+    body {
+      min-height: 100vh;
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(34,211,238,0.08), transparent),
+                  radial-gradient(1200px 600px at 90% 110%, rgba(99,102,241,0.08), transparent);
+    }
+    .sidebar { background: var(--sidebar-bg); min-height: 100vh; }
+    .sidebar .nav-link {
+      color: rgba(255,255,255,0.85);
+      border-radius: .75rem;
+      display: flex; align-items: center; gap: .5rem;
+      padding: .625rem .75rem;
+    }
+    .sidebar .nav-link:hover { background: var(--sidebar-hover); color: #fff; }
+    .sidebar .nav-link.active {
+      background: linear-gradient(135deg, rgba(34,211,238,.25), rgba(99,102,241,.25));
+      color: #fff; border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 0 1px rgba(34,211,238,.25) inset;
+    }
+    .brand-badge {
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 1rem;
+      padding: .5rem .75rem;
+      background: rgba(255,255,255,0.03);
+    }
+    .card-ghost {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 1rem;
+    }
+    .table thead th { position: sticky; top: 0; background: rgba(15,23,42,.95); }
+    .stat { border: 1px solid rgba(255,255,255,0.08);
+            border-radius: .75rem; padding: .75rem 1rem; background: rgba(255,255,255,0.03); }
+    .avatar-sm { width: 40px; height: 40px; object-fit: cover; border-radius: 50%;
+                 border: 1px solid rgba(255,255,255,0.2); }
+    .testi-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+                  border-radius: 1rem; padding: 1rem; height: 100%; }
+    .testi-photo { width: 70px; height: 70px; border-radius: 50%; object-fit: cover;
+                   border: 1px solid rgba(255,255,255,0.2); }
+    .testi-quote { font-style: italic; opacity: .95; }
+  </style>
+</head>
+
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <nav class="col-12 col-lg-2 p-3 sidebar">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <a href="{{ url_for('index') }}" class="text-decoration-none">
+            <span class="brand-badge fw-semibold text-white">
+              <i class="bi bi-basket2 me-2"></i>Braintree Food Pantry
+            </span>
+          </a>
+          <button class="btn btn-outline-light d-lg-none" data-bs-toggle="collapse" data-bs-target="#adminNav">
+            <i class="bi bi-list"></i>
+          </button>
+        </div>
+
+        <div id="adminNav" class="collapse d-lg-block">
+          <div class="text-secondary text-uppercase small mb-2">Admin</div>
+          <ul class="nav nav-pills flex-column gap-1" id="admin-tab" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#pane-edit">
+                <i class="bi bi-pencil-square"></i> Edit Website
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pane-messages">
+                <i class="bi bi-chat-dots"></i> User Messages
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pane-donations">
+                <i class="bi bi-credit-card"></i> Donations
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pane-testimonials">
+                <i class="bi bi-people"></i> Testimonials
+              </button>
+            </li>
+          </ul>
+          <hr class="border-secondary my-3" />
+          <button id="btnLogout" class="btn btn-outline-danger btn-sm w-100">
+            <i class="bi bi-box-arrow-right me-1"></i>Logout
+          </button>
+        </div>
+      </nav>
+
+      <!-- Main -->
+      <main class="col-12 col-lg-10 px-4 py-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+          <div>
+            <!-- <h1 class="h3 mb-1">Admin Dashboard</h1> -->
+            <div class="text-secondary">Manage site content, review messages, and track donations.</div>
+          </div>
+          <div class="d-flex gap-2">
+            <span class="stat"><i class="bi bi-envelope-open me-1"></i><span id="statUnread">0</span> unread</span>
+            <span class="stat"><i class="bi bi-cash-coin me-1"></i>$<span id="statTotal">0.00</span> total</span>
+          </div>
+        </div>
+
+        <div class="tab-content">
+          <!-- Edit Website -->
+          <div class="tab-pane fade show active" id="pane-edit">
+            <div class="card-ghost p-4 mb-3">
+              <h5><i class="bi bi-pencil-square me-2 text-info"></i>Edit Homepage Content</h5>
+              <p class="text-secondary small">Update homepage or announcements.</p>
+
+              <!-- NOTE: Hook this to a Flask route (e.g., /api/site-content) when available -->
+              <form id="siteForm" class="needs-validation" novalidate>
+                <div class="mb-3">
+                  <label class="form-label" for="mission">Header Title</label>
+                  <textarea id="mission" class="form-control" rows="3" placeholder="Our mission is to…" required></textarea>
+                  <div class="invalid-feedback">Please add a mission statement.</div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="about">About Section</label>
+                  <textarea id="about" class="form-control" rows="5" placeholder="About the pantry…" required></textarea>
+                  <div class="invalid-feedback">Please add an about section.</div>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label" for="address">Address</label>
+                    <input id="address" type="text" class="form-control" placeholder="594 Washington St, Braintree, MA 02184" required />
+                    <div class="invalid-feedback">Address is required.</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="hours">Opening Hours</label>
+                    <input id="hours" type="text" class="form-control" placeholder="Sat 10:00–12:00; Wed 4:00–6:00" required />
+                    <div class="invalid-feedback">Please enter opening hours.</div>
+                  </div>
+                </div>
+                <div class="row g-3 mt-0">
+                  <div class="col-md-6">
+                    <label class="form-label" for="email">Contact Email</label>
+                    <input id="email" type="email" class="form-control" placeholder="info@braintreefoodpantry.org" required />
+                    <div class="invalid-feedback">Valid email required.</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="phone">Contact Phone</label>
+                    <input id="phone" type="tel" class="form-control" placeholder="(781) 555-0123" />
+                  </div>
+                </div>
+                <div class="row g-3 mt-0">
+                  <div class="col-md-6">
+                    <label class="form-label" for="facebook">Facebook URL</label>
+                    <input id="facebook" type="url" class="form-control" placeholder="https://facebook.com/..." />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="donateLink">Donate Link</label>
+                    <input id="donateLink" type="url" class="form-control" placeholder="https://your-donate-page" />
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                  <button type="button" class="btn btn-outline-light btn-sm" id="btnPreview"><i class="bi bi-eye me-1"></i>Preview</button>
+                  <button type="submit" class="btn btn-primary btn-sm" id="btnSave"><i class="bi bi-save me-1"></i>Save Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Messages -->
+          <!-- <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th style="width:110px;">Date</th>
+                <th style="width:180px;">Name</th>
+                <th>Email</th>
+                <th>Subject</th>
+                <th style="width:160px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="messagesBody"></tbody>
+          </table> -->
+          <!-- User Messages Tab -->
+          <div class="tab-pane fade" id="pane-messages">
+            <div class="card-ghost p-4">
+              <div class="d-flex align-items-center justify-content-between">
+                <h5 class="mb-0"><i class="bi bi-chat-dots me-2 text-info"></i>User Messages</h5>
+                <small class="text-secondary" id="msgStatus">Not connected to backend yet.</small>
+              </div>
+              <div class="table-responsive mt-3">
+                <!-- 👇 paste the table here -->
+                <table class="table table-dark table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th style="width:110px;">Date</th>
+                      <th style="width:180px;">Name</th>
+                      <th>Email</th>
+                      <th>Subject</th>
+                      <th style="width:160px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="messagesBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- Donations -->
+          <div class="tab-pane fade" id="pane-donations">
+            <div class="card-ghost p-4">
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <h5 class="mb-0"><i class="bi bi-credit-card me-2 text-info"></i>Donations</h5>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="input-group input-group-sm" style="max-width: 320px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input id="donSearch" type="search" class="form-control" placeholder="Search donor, ref, method…" />
+                  </div>
+                  <!-- Disabled until you add POST /api/donations -->
+                  <button class="btn btn-sm btn-outline-success" id="btnAddDonation" disabled title="Add route not implemented on backend"><i class="bi bi-plus-circle me-1"></i>Add</button>
+                </div>
+              </div>
+              <div class="table-responsive" style="max-height: 520px;">
+                <table class="table table-sm align-middle table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th style="width:110px;">Date</th>
+                      <th>Donor</th>
+                      <th style="width:140px;">Amount</th>
+                      <th style="width:120px;">Method</th>
+                      <th>Reference</th>
+                      <th>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody id="donationsBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Testimonials -->
+          <div class="tab-pane fade" id="pane-testimonials">
+            <div class="card-ghost p-4">
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <h5 class="mb-0"><i class="bi bi-people me-2 text-info"></i>Testimonials</h5>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="input-group input-group-sm" style="max-width: 320px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input id="testiSearch" type="search" class="form-control" placeholder="Search name, profession, message…" />
+                  </div>
+                  <button class="btn btn-sm btn-outline-success" id="btnAddTestimonial"><i class="bi bi-plus-circle me-1"></i>Add</button>
+                </div>
+              </div>
+
+              <div class="table-responsive" style="max-height: 420px;">
+                <table class="table table-sm align-middle table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th style="width:72px;">Photo</th>
+                      <th style="width:200px;">Name</th>
+                      <th style="width:200px;">Profession</th>
+                      <th>Message</th>
+                      <th style="width:160px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="testimonialsBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card-ghost p-4 mt-3">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <h3 class="h6 mb-0"><i class="bi bi-eye me-2"></i>Live Preview</h3>
+                <small class="text-secondary">Mirrors how it will appear on the public site.</small>
+              </div>
+              <div id="testimonialsPreview" class="row g-3 row-cols-1 row-cols-md-2 row-cols-xl-3"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Add/Edit Testimonial Modal -->
+  <div class="modal fade" id="testimonialModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="testimonialModalTitle"><i class="bi bi-plus-circle me-2"></i>Add Testimonial</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="testimonialForm" class="needs-validation" novalidate>
+            <input type="hidden" id="testiId" />
+            <div class="mb-3 text-center">
+              <img id="testImagePreview" class="testi-photo d-none mb-2" alt="Preview" />
+              <div class="input-group">
+                <input id="testImage" type="file" accept="image/*" class="form-control" />
+                <button class="btn btn-outline-secondary" type="button" id="btnClearImage"><i class="bi bi-x-circle"></i></button>
+              </div>
+              <div class="form-text">Upload a square photo (JPG/PNG). Preview appears above.</div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label" for="testName">Name</label>
+              <input id="testName" type="text" class="form-control" placeholder="Jane Doe" required />
+              <div class="invalid-feedback">Name is required.</div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label" for="testRole">Profession / Role</label>
+              <input id="testRole" type="text" class="form-control" placeholder="Volunteer" required />
+              <div class="invalid-feedback">Profession/Role is required.</div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label" for="testMessage">Message</label>
+              <textarea id="testMessage" class="form-control" rows="3" placeholder="Share their words…" required></textarea>
+              <div class="invalid-feedback">Message is required.</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button id="saveTestimonial" class="btn btn-success"><i class="bi bi-check2-circle me-1"></i>Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- View Message Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-envelope-open me-2 text-info"></i>View Message</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Date:</strong> <span id="msgDate"></span></p>
+        <p><strong>Name:</strong> <span id="msgName"></span></p>
+        <p><strong>Email:</strong> <a id="msgEmail" href="#" target="_blank"></a></p>
+        <p><strong>Subject:</strong> <span id="msgSubject"></span></p>
+        <hr>
+        <p id="msgText" style="white-space: pre-wrap;"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Toasts -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+    <div id="toast" class="toast text-bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toastBody">Saved.</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ---------- Utilities ----------
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const showToast = (msg) => {
+      $('#toastBody').textContent = msg;
+      new bootstrap.Toast($('#toast')).show();
+    };
+    const fmtMoney = (n) => (Number(n) || 0).toFixed(2);
+
+    // ---------- Stats (messages unread + donation total) ----------
+    async function refreshStats() {
+      // Donations total from /api/donations
+      try {
+        const r = await fetch('{{ url_for("get_donations") }}');
+        if (r.ok) {
+          const dons = await r.json();
+          const total = dons.reduce((s,d) => s + (Number(d.amount) || 0), 0);
+          $('#statTotal').textContent = fmtMoney(total);
+        }
+      } catch {}
+
+      // Unread messages — requires /api/messages; fallback to 0
+      // Unread messages
+      try {
+        const r = await fetch('/api/messages');
+        if (r.ok) {
+          const msgs = await r.json();
+          const unread = msgs.filter(m => (m.status || '').toLowerCase() === 'unread').length;
+          $('#statUnread').textContent = unread;
+        } else {
+          $('#statUnread').textContent = '0';
+        }
+      } catch {
+        $('#statUnread').textContent = '0';
+      }
+
+    }
+
+
+  // ---------- Load and Save Site Info (connected to /api/site-content) ----------
+function validateForm(form) {
+  form.classList.add('was-validated');
+  return form.checkValidity();
+}
+
+// Load current website info from backend
+async function loadSiteContent() {
+  try {
+    const r = await fetch('/api/site-content');
+    if (!r.ok) throw new Error('Failed to load site content');
+    const data = await r.json();
+    $('#mission').value = data.mission || '';
+    $('#about').value = data.about || '';
+    $('#address').value = data.address || '';
+    $('#hours').value = data.hours || '';
+    $('#email').value = data.email || '';
+    $('#phone').value = data.phone || '';
+    $('#facebook').value = data.facebook || '';
+    $('#donateLink').value = data.donate_link || '';
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to load site info.');
+  }
+}
+
+// Save updated content back to backend
+$('#siteForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  if (!validateForm(form)) return;
+
+  const payload = {
+    mission: $('#mission').value.trim(),
+    about: $('#about').value.trim(),
+    address: $('#address').value.trim(),
+    hours: $('#hours').value.trim(),
+    email: $('#email').value.trim(),
+    phone: $('#phone').value.trim(),
+    facebook: $('#facebook').value.trim(),
+    donateLink: $('#donateLink').value.trim()
+  };
+
+  try {
+    const r = await fetch('/api/site-content', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error();
+    showToast('Website info updated!');
+  } catch {
+    showToast('Failed to save.');
+  }
+});
+
+// Preview website in new tab
+$('#btnPreview').addEventListener('click', () => {
+  window.open('{{ url_for("index") }}', '_blank');
+});
+
+// ---------- View / Delete Message ----------
+document.addEventListener('click', async (e) => {
+  const viewBtn = e.target.closest('[data-view-msg]');
+  const delBtn = e.target.closest('[data-del-msg]');
+
+  // View Message
+// View Message
+if (viewBtn) {
+  const id = viewBtn.getAttribute('data-view-msg');
+  try {
+    const r = await fetch('/api/messages');
+    const data = await r.json();
+    const msg = data.find(x => String(x.id) === String(id));
+    if (!msg) return;
+
+    // Fill modal
+    $('#msgDate').textContent = msg.date || '';
+    $('#msgName').textContent = msg.name || '';
+    $('#msgEmail').textContent = msg.email || '';
+    $('#msgEmail').href = `mailto:${msg.email}`;
+    $('#msgSubject').textContent = msg.subject || '';
+    $('#msgText').textContent = msg.message || '';
+
+    // Mark as read
+    await fetch('/api/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: 'Read' })
+    });
+
+    // Refresh unread counter
+    refreshStats();
+
+    new bootstrap.Modal('#messageModal').show();
+  } catch {
+    showToast('Failed to open message.');
+  }
+}
+
+
+  // Delete Message
+  if (delBtn) {
+    const id = delBtn.getAttribute('data-del-msg');
+    if (!confirm('Are you sure you want to delete this message?')) return;
+    try {
+      const r = await fetch(`/api/messages?id=${id}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error();
+      showToast('Message deleted.');
+      await renderMessages();
+      refreshStats();
+    } catch {
+      showToast('Failed to delete message.');
+    }
+  }
+});
+
+
+// Load content automatically when admin page opens
+loadSiteContent();
+
+
+// ---------- Messages ----------
+async function renderMessages(filter='') {
+  const tbody = $('#messagesBody');
+  tbody.innerHTML = '';
+  try {
+    const r = await fetch('/api/messages');
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    const q = (filter||'').toLowerCase();
+
+    data
+      .filter(m => (m.name+m.email+m.subject+m.message).toLowerCase().includes(q))
+      .sort((a,b) => String(b.date).localeCompare(String(a.date)))
+      .forEach(m => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="text-nowrap">${m.date || ''}</td>
+          <td>${m.name || ''}</td>
+          <td class="text-break"><a href="mailto:${m.email || ''}">${m.email || ''}</a></td>
+          <td>${m.subject || ''}</td>
+          <td class="text-nowrap">
+            <button class="btn btn-sm btn-outline-info me-1" data-view-msg="${m.id}">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" data-del-msg="${m.id}">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+
+  } catch {
+    $('#msgStatus').textContent = 'Failed to load messages.';
+  }
+}
+
+    // ---------- Donations (GET only) ----------
+    async function renderDonations(filter='') {
+      const tbody = $('#donationsBody');
+      tbody.innerHTML = '';
+      try {
+        const r = await fetch('{{ url_for("get_donations") }}');
+        if (!r.ok) throw new Error();
+        const data = await r.json();
+        const q = (filter||'').toLowerCase();
+        let total = 0;
+        data
+          .filter(d => (String(d.name)+String(d.method)+String(d.ref)+String(d.notes||'')).toLowerCase().includes(q))
+          .sort((a,b) => String(b.date).localeCompare(String(a.date)))
+          .forEach(d => {
+            total += Number(d.amount) || 0;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="text-nowrap">${d.date||''}</td>
+              <td>${d.name||''}</td>
+              <td>$${fmtMoney(d.amount)}</td>
+              <td>${d.method||''}</td>
+              <td>${d.ref||''}</td>
+              <td class="text-break">${d.notes||''}</td>`;
+            tbody.appendChild(tr);
+          });
+        $('#statTotal').textContent = fmtMoney(total);
+      } catch {
+        // leave empty
+      }
+    }
+
+    $('#donSearch').addEventListener('input', (e) => renderDonations(e.target.value));
+
+    // ---------- Testimonials (full CRUD with your API) ----------
+    function imgTagOrEmoji(src, alt) {
+      return src
+        ? `<img src="${src}" class="avatar-sm" alt="${alt}">`
+        : '<div class="avatar-sm d-inline-flex align-items-center justify-content-center bg-secondary-subtle">🙂</div>';
+    }
+
+    async function fetchTestimonials() {
+      const r = await fetch('{{ url_for("testimonials") }}');
+      if (!r.ok) throw new Error('Failed to load testimonials');
+      return await r.json();
+    }
+
+    async function renderTestimonials(filter='') {
+      const tbody = $('#testimonialsBody');
+      const preview = $('#testimonialsPreview');
+      tbody.innerHTML = ''; preview.innerHTML = '';
+
+      try {
+        const data = await fetchTestimonials();
+        const q = (filter||'').toLowerCase();
+        const filtered = data.filter(t =>
+          (t.name + (t.profession||'') + t.message).toLowerCase().includes(q)
+        );
+
+        // Table
+        filtered.forEach(t => {
+          const tr = document.createElement('tr');
+          const imgSrc = t.image_path ? `{{ url_for('serve_upload', filename='') }}${t.image_path.replace(/^uploads\//,'')}` : '';
+          tr.innerHTML = `
+            <td>${imgTagOrEmoji(imgSrc, t.name)}</td>
+            <td>${t.name}</td>
+            <td>${t.profession||''}</td>
+            <td class="text-truncate" style="max-width: 360px;" title="${t.message}">${t.message}</td>
+            <td class="text-nowrap">
+              <button class="btn btn-sm btn-outline-info me-1" data-edit-test="${t.id}"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger" data-del-test="${t.id}"><i class="bi bi-trash"></i></button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+
+        // Preview cards
+        filtered.forEach(t => {
+          const col = document.createElement('div');
+          col.className = 'col';
+          const imgSrc = t.image_path ? `{{ url_for('serve_upload', filename='') }}${t.image_path.replace(/^uploads\//,'')}` : '';
+          col.innerHTML = `
+            <div class="testi-card h-100 text-center">
+              <img src="${imgSrc || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'35\' r=\'20\' fill=\'%23aaa\'/><rect x=\'20\' y=\'60\' width=\'60\' height=\'30\' rx=\'15\' fill=\'%23aaa\'/></svg>'}" class="testi-photo mb-3" alt="${t.name}">
+              <div class="testi-quote">“${t.message.replaceAll('"','\"')}”</div>
+              <div class="mt-2 fw-semibold">${t.name}</div>
+              <div class="text-secondary small">${t.profession||''}</div>
+            </div>`;
+          preview.appendChild(col);
+        });
+
+      } catch (e) {
+        console.error(e);
+        showToast('Failed to load testimonials.');
+      }
+    }
+
+    $('#testiSearch').addEventListener('input', (e) => renderTestimonials(e.target.value));
+
+    // Add Testimonial
+    $('#btnAddTestimonial').addEventListener('click', () => {
+      $('#testimonialForm').reset();
+      $('#testimonialForm').classList.remove('was-validated');
+      $('#testiId').value = '';
+      $('#testImagePreview').classList.add('d-none');
+      $('#testImage').value = '';
+      $('#testimonialModalTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Add Testimonial';
+      new bootstrap.Modal('#testimonialModal').show();
+    });
+
+    // Image preview handlers
+    async function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+    $('#testImage').addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) { $('#testImagePreview').classList.add('d-none'); return; }
+      const dataUrl = await fileToDataUrl(file);
+      $('#testImagePreview').src = dataUrl;
+      $('#testImagePreview').classList.remove('d-none');
+    });
+    $('#btnClearImage').addEventListener('click', () => {
+      $('#testImage').value = '';
+      $('#testImagePreview').classList.add('d-none');
+      $('#testImagePreview').removeAttribute('src');
+    });
+
+    // Save (Add / Update)
+    $('#saveTestimonial').addEventListener('click', async () => {
+      const form = $('#testimonialForm');
+      if (!validateForm(form)) return;
+
+      const id = $('#testiId').value.trim();
+      const name = $('#testName').value.trim();
+      const profession = $('#testRole').value.trim();
+      const message = $('#testMessage').value.trim();
+      const file = $('#testImage').files?.[0];
+
+      const fd = new FormData();
+      fd.append('name', name);
+      fd.append('profession', profession);
+      fd.append('message', message);
+      if (file) fd.append('image', file);
+
+      try {
+        // If id exists, DELETE then POST is a simple way (no PUT route)
+        if (id) {
+          await fetch('{{ url_for("testimonials") }}?id=' + encodeURIComponent(id), { method: 'DELETE' });
+        }
+        const r = await fetch('{{ url_for("testimonials") }}', { method: 'POST', body: fd });
+        if (!r.ok) throw new Error();
+        bootstrap.Modal.getInstance($('#testimonialModal')).hide();
+        showToast('Testimonial saved.');
+        await renderTestimonials($('#testiSearch').value);
+      } catch {
+        showToast('Failed to save testimonial.');
+      }
+    });
+
+    // Edit/Delete (delegation)
+    document.addEventListener('click', async (e) => {
+      const delBtn = e.target.closest('[data-del-test]');
+      const editBtn = e.target.closest('[data-edit-test]');
+
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-del-test');
+        try {
+          const r = await fetch('{{ url_for("testimonials") }}?id=' + encodeURIComponent(id), { method: 'DELETE' });
+          if (!r.ok) throw new Error();
+          showToast('Testimonial deleted.');
+          await renderTestimonials($('#t﻿﻿estiSearch').value);
+        } catch {
+          showToast('Failed to delete testimonial.');
+        }
+      }
+
+      if (editBtn) {
+        const id = editBtn.getAttribute('data-edit-test');
+        try {
+          const data = await fetchTestimonials();
+          const t = data.find(x => String(x.id) === String(id));
+          if (!t) return;
+          $('#testimonialForm').classList.remove('was-validated');
+          $('#testiId').value = t.id;
+          $('#testName').value = t.name;
+          $('#testRole').value = t.profession || '';
+          $('#testMessage').value = t.message || '';
+          if (t.image_path) {
+            const src = `{{ url_for('serve_upload', filename='') }}${t.image_path.replace(/^uploads\//,'')}`;
+            $('#testImagePreview').src = src;
+            $('#testImagePreview').classList.remove('d-none');
+          } else {
+            $('#testImagePreview').classList.add('d-none');
+            $('#testImagePreview').removeAttribute('src');
+          }
+          $('#testImage').value = '';
+          $('#testimonialModalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Edit Testimonial';
+          new bootstrap.Modal('#testimonialModal').show();
+        } catch {
+          showToast('Failed to open testimonial.');
+        }
+      }
+    });
+
+    // ---------- Logout ----------
+    $('#btnLogout').addEventListener('click', () => {
+      window.location.href = '{{ url_for("logout") }}';
+    });
+
+    // ---------- Init ----------
+    (async function init() {
+      await Promise.all([
+        renderDonations(),
+        renderTestimonials(),
+        renderMessages()
+      ]);
+      refreshStats();
+    })();
+  </script>
+
+  <!-- View Message Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-envelope-open me-2 text-info"></i>View Message</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Date:</strong> <span id="msgDate"></span></p>
+        <p><strong>Name:</strong> <span id="msgName"></span></p>
+        <p><strong>Email:</strong> <a id="msgEmail" href="#" target="_blank"></a></p>
+        <p><strong>Subject:</strong> <span id="msgSubject"></span></p>
+        <hr>
+        <p id="msgText" style="white-space: pre-wrap;"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
